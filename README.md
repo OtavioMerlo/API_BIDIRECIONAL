@@ -101,6 +101,48 @@ Resposta:
 }
 ```
 
+### Memórias (extração automática)
+
+O relay observa os turnos (transcrição + resposta da Indi) que passam entre o
+PC e o celular e, em segundo plano, pergunta ao Groq quais fatos são duráveis
+e importantes. Os fatos com `importancia >= MEMORIA_IMPORTANCIA_MIN` são
+salvos em um **SQLite local** (`memorias.db`), com dedupe por conteúdo.
+
+```text
+GET /memorias?limite=20&importancia_min=3
+```
+
+Resposta:
+
+```json
+{
+  "memorias": [
+    {
+      "id": 1,
+      "conteudo": "O usuário adora rock clássico",
+      "categoria": "PREFERENCIA",
+      "tags": "musica, rock",
+      "importancia": 5,
+      "contexto": "conversa",
+      "criada_em": "2026-09-17 00:57:23",
+      "atualizada_em": "2026-09-17 00:57:23"
+    }
+  ]
+}
+```
+
+**Variáveis de ambiente do relay:**
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `GROQ_API_KEY` | — | Chave do Groq usada para extrair os fatos (obrigatória p/ extração). |
+| `MEMORIA_EXTRACT` | `1` | `1` liga a extração automática; `0` desliga. |
+| `MEMORIA_IMPORTANCIA_MIN` | `3` | Só salva fatos com importância ≥ esse valor (1–5). |
+| `MEMORIA_MODEL` | `openai/gpt-oss-120b` | Modelo do Groq usado na extração. |
+
+> O disco do Render é efêmero: `memorias.db` pode ser apagado em redeploys
+> do plano gratuito. Se precisar de persistência real, use um banco externo.
+
 ---
 
 # WebSocket
@@ -232,7 +274,7 @@ pip install -r requirements.txt
 Execute:
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 10000
+uvicorn main:app --host 0.0.0.0 --port 10000 --ws-max-size 67108864
 ```
 
 O servidor estará disponível em:
@@ -274,7 +316,7 @@ COPY main.py .
 
 EXPOSE 10000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000", "--ws-max-size", "67108864"]
 ```
 
 Depois do deploy, o Render fornecerá um endereço semelhante a:

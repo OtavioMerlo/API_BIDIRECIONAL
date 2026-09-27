@@ -10,3 +10,4 @@ typing_extensions==4.16.0
 websockets==17.1
 fastapi
 uvicorn[standard]
+httpx
